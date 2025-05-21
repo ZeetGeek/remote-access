@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useSocket } from './context/SocketProvider';
 import ConnectionModal from './components/ConnectionModal';
+import RemoteControl from './components/RemoteControl';
+import RemoteCursor from './components/RemoteCursor';
 
 export default function Home() {
     // Socket connection
@@ -22,6 +24,11 @@ export default function Home() {
     const [requestFrom, setRequestFrom] = useState('');
     const [senderSocketId, setSenderSocketId] = useState('');
 
+    // Remote control states
+    const [isController, setIsController] = useState(false);
+    const [isBeingControlled, setIsBeingControlled] = useState(false);
+    const [connectedTo, setConnectedTo] = useState(null);
+
     // Random color status
     const [color, setColor] = useState('#ffffff');
 
@@ -37,28 +44,82 @@ export default function Home() {
         if (!socket) return;
 
         // Listen for connection requests
-        socket.on('connectionRequest', ({ senderNumber, senderSocketId }) => {
+        const handleConnectionRequest = ({ senderNumber, senderSocketId }) => {
+            console.log('Received connection request from:', senderNumber);
             setRequestFrom(senderNumber);
             setSenderSocketId(senderSocketId);
             setShowModal(true);
-        });
+        };
 
         // Listen for connection status updates
-        socket.on('connectionStatus', ({ accepted, message }) => {
+        const handleConnectionStatus = ({ accepted, message, connectedTo, isController }) => {
+            console.log('Connection status update:', {
+                accepted,
+                message,
+                connectedTo,
+                isController,
+            });
             setConnectionStatus(message);
             setStatusColor(accepted ? 'text-green-600' : 'text-red-600');
-        });
+
+            if (accepted && connectedTo) {
+                console.log(
+                    'Setting connection state:',
+                    isController ? 'Controller' : 'Being controlled'
+                );
+                if (isController === true) {
+                    setIsController(true);
+                    setIsBeingControlled(false);
+                } else if (isController === false) {
+                    setIsController(false);
+                    setIsBeingControlled(true);
+                }
+                setConnectedTo(connectedTo);
+            }
+        };
+
+        // Listen for prepare for remote control (for the person being controlled)
+        const handlePrepareForRemoteControl = ({ connectedTo }) => {
+            console.log('Preparing for remote control, connected to:', connectedTo);
+            setIsBeingControlled(true);
+            setIsController(false);
+            setConnectedTo(connectedTo);
+        };
+
+        // Listen for connection closed
+        const handleConnectionClosed = () => {
+            console.log('Connection closed');
+            setIsController(false);
+            setIsBeingControlled(false);
+            setConnectedTo(null);
+            setConnectionStatus('Connection closed');
+            setStatusColor('text-gray-600');
+        };
 
         // Listen for request errors
-        socket.on('requestError', ({ message }) => {
+        const handleRequestError = ({ message }) => {
+            console.error('Request error:', message);
             setErrorMessage(message);
             setTimeout(() => setErrorMessage(''), 5000);
-        });
+        };
+
+        // Add all event listeners
+        socket.on('connectionRequest', handleConnectionRequest);
+        socket.on('connectionStatus', handleConnectionStatus);
+        socket.on('prepareForRemoteControl', handlePrepareForRemoteControl);
+        socket.on('connectionClosed', handleConnectionClosed);
+        socket.on('requestError', handleRequestError);
+
+        // Log initial connection
+        console.log('Socket initialized, ID:', socket.id);
 
         return () => {
-            socket.off('connectionRequest');
-            socket.off('connectionStatus');
-            socket.off('requestError');
+            // Remove all event listeners
+            socket.off('connectionRequest', handleConnectionRequest);
+            socket.off('connectionStatus', handleConnectionStatus);
+            socket.off('prepareForRemoteControl', handlePrepareForRemoteControl);
+            socket.off('connectionClosed', handleConnectionClosed);
+            socket.off('requestError', handleRequestError);
         };
     }, [socket]);
 
@@ -97,6 +158,9 @@ export default function Home() {
 
         setErrorMessage('');
         setConnectionStatus('');
+        setIsController(false);
+        setIsBeingControlled(false);
+        setConnectedTo(null);
 
         socket.emit('sendConnectionRequest', {
             targetNumber: targetRequestNumber,
@@ -156,18 +220,19 @@ export default function Home() {
                 </div>
 
                 {/* Section 1: Request Number */}
-                <section className="p-4 mb-6 border rounded-lg  shadow-sm">
+                <section className="p-4 mb-6 border rounded-lg shadow-sm bg-white/80">
                     <h2 className="mb-3 text-lg font-semibold">Your Request Number</h2>
                     <div className="flex items-center gap-3">
                         <input
                             type="text"
-                            className="flex-1 px-3 py-2 border rounded-md font-mono text-center bg-neutral-900"
+                            className="flex-1 px-3 py-2 border rounded-md font-mono text-center bg-gray-50"
                             value={myRequestNumber}
                             readOnly
                         />
                         <button
                             onClick={generateRequestNumber}
                             className="px-3 py-2 text-sm text-white bg-blue-600 rounded-md hover:bg-blue-700"
+                            disabled={isController || isBeingControlled}
                         >
                             Generate New
                         </button>
@@ -175,7 +240,7 @@ export default function Home() {
                 </section>
 
                 {/* Section 2: Send Connection Request */}
-                <section className="p-4 mb-6 border rounded-lg shadow-sm">
+                <section className="p-4 mb-6 border rounded-lg shadow-sm bg-white/80">
                     <h2 className="mb-3 text-lg font-semibold">Send Connection Request</h2>
                     <div className="space-y-3">
                         <input
@@ -184,11 +249,17 @@ export default function Home() {
                             placeholder="Enter Remote Number"
                             value={targetRequestNumber}
                             onChange={(e) => setTargetRequestNumber(e.target.value)}
+                            disabled={isController || isBeingControlled}
                         />
 
                         <button
                             onClick={sendConnectionRequest}
-                            disabled={!isConnected || !targetRequestNumber}
+                            disabled={
+                                !isConnected ||
+                                !targetRequestNumber ||
+                                isController ||
+                                isBeingControlled
+                            }
                             className="w-full px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-gray-400"
                         >
                             Send Request
@@ -201,13 +272,36 @@ export default function Home() {
                 </section>
 
                 {/* Section 3: Connection Status */}
-                {connectionStatus && (
-                    <section className="p-4 border rounded-lg bg-white shadow-sm">
+                {connectionStatus && !isController && !isBeingControlled && (
+                    <section className="p-4 border rounded-lg shadow-sm bg-white/80">
                         <h2 className="mb-3 text-lg font-semibold">Connection Status</h2>
                         <p className={`text-center ${statusColor}`}>{connectionStatus}</p>
                     </section>
                 )}
             </div>
+
+            {/* Remote Control Section */}
+            {socket && (isController || isBeingControlled) && connectedTo && (
+                <div
+                    className={`w-full ${
+                        isController ? 'max-w-[800px]' : ''
+                    } mt-8 border-2 border-blue-500 p-4 rounded-lg`}
+                >
+                    <div className="mb-4 bg-blue-50 p-2 rounded-md text-sm text-blue-700">
+                        {isController
+                            ? `Controlling remote browser (connected to: ${connectedTo})`
+                            : `Your browser is being controlled (by: ${connectedTo})`}
+                    </div>
+                    <RemoteControl
+                        socket={socket}
+                        isController={isController}
+                        connectedTo={connectedTo}
+                    />
+                </div>
+            )}
+
+            {/* Remote Cursor (only shown for person being controlled) */}
+            {isBeingControlled && <RemoteCursor />}
 
             {/* Connection Request Modal */}
             <ConnectionModal
