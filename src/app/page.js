@@ -2,389 +2,461 @@
 
 import { useState, useEffect } from 'react';
 
-export default function TeamViewerConnector() {
-  const [myTeamViewerId, setMyTeamViewerId] = useState('');
-  const [myPassword, setMyPassword] = useState('');
-  const [partnerTeamViewerId, setPartnerTeamViewerId] = useState('');
-  const [partnerPassword, setPartnerPassword] = useState('');
-  const [partnerStatus, setPartnerStatus] = useState('unknown'); // 'online', 'offline', 'unknown'
-  const [connectionStatus, setConnectionStatus] = useState('idle'); // 'idle', 'checking', 'connecting', 'connected', 'failed'
-  const [teamViewerInstalled, setTeamViewerInstalled] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+export default function RemoteControl() {
+  const [selectedService, setSelectedService] = useState('chrome-remote');
+  const [deviceId, setDeviceId] = useState('');
+  const [connectionCode, setConnectionCode] = useState('');
+  const [isConnecting, setIsConnecting] = useState(false);
 
-  useEffect(() => {
-    generateMyTeamViewerCredentials();
-    checkTeamViewerInstallation();
-  }, []);
-
-  const generateMyTeamViewerCredentials = () => {
-    // Simulate getting TeamViewer ID and password from system
-    const simulatedId = Math.floor(Math.random() * 900000000) + 100000000;
-    const simulatedPassword = Math.random().toString(36).substring(2, 8);
-    setMyTeamViewerId(simulatedId.toString());
-    setMyPassword(simulatedPassword);
-  };
-
-  const checkTeamViewerInstallation = () => {
-    // In a real scenario, this would check if TeamViewer is installed
-    setTeamViewerInstalled(true);
-  };
-
-  const checkPartnerStatus = async (teamViewerId) => {
-    if (!teamViewerId || teamViewerId.length < 9) {
-      setPartnerStatus('unknown');
-      return;
+  const remoteServices = [
+    {
+      id: 'chrome-remote',
+      name: 'Chrome Remote Desktop',
+      icon: '🌐',
+      description: 'Google\'s free remote desktop solution',
+      url: 'https://remotedesktop.google.com/access',
+      webClient: true,
+      requiresInstall: true,
+      platforms: ['Windows', 'Mac', 'Linux', 'Android', 'iOS']
+    },
+    {
+      id: 'anydesk',
+      name: 'AnyDesk',
+      icon: '🖥️',
+      description: 'Professional remote desktop software',
+      url: 'https://anydesk.com/en/downloads',
+      webClient: false,
+      requiresInstall: true,
+      platforms: ['Windows', 'Mac', 'Linux', 'Android', 'iOS']
+    },
+    {
+      id: 'teamviewer',
+      name: 'TeamViewer',
+      icon: '🔗',
+      description: 'World\'s most popular remote access solution',
+      url: 'https://www.teamviewer.com/en/download/',
+      webClient: true,
+      requiresInstall: true,
+      platforms: ['Windows', 'Mac', 'Linux', 'Android', 'iOS']
+    },
+    {
+      id: 'windows-rdp',
+      name: 'Windows RDP',
+      icon: '🪟',
+      description: 'Built-in Windows Remote Desktop',
+      url: 'ms-rd:',
+      webClient: false,
+      requiresInstall: false,
+      platforms: ['Windows']
+    },
+    {
+      id: 'vnc-viewer',
+      name: 'VNC Viewer',
+      icon: '📺',
+      description: 'Cross-platform remote access',
+      url: 'https://www.realvnc.com/en/connect/download/viewer/',
+      webClient: false,
+      requiresInstall: true,
+      platforms: ['Windows', 'Mac', 'Linux', 'Android', 'iOS']
     }
+  ];
 
-    setPartnerStatus('checking');
+  const currentService = remoteServices.find(service => service.id === selectedService);
 
-    // Simulate API call to check if TeamViewer ID is online
+  const connectToChromeRemote = () => {
+    setIsConnecting(true);
+    
+    // Open Chrome Remote Desktop in new tab
+    window.open('https://remotedesktop.google.com/access', '_blank');
+    
     setTimeout(() => {
-      // Simulate random online/offline status
-      const isOnline = Math.random() > 0.2; // 80% chance of being online
-      setPartnerStatus(isOnline ? 'online' : 'offline');
-    }, 1500);
-  };
-
-  const connectToPartner = async () => {
-    if (partnerStatus !== 'online') {
-      alert('Partner is not online. Please check the TeamViewer ID.');
-      return;
-    }
-
-    if (!partnerPassword.trim()) {
-      alert('Please enter the partner&apos;s password to connect.');
-      return;
-    }
-
-    setConnectionStatus('connecting');
-
-    // Simulate connection attempt with ID and password
-    setTimeout(() => {
-      // Simulate authentication
-      const authSuccess = Math.random() > 0.3; // 70% success rate
-      
-      if (authSuccess) {
-        setConnectionStatus('connected');
-        openTeamViewer();
-      } else {
-        setConnectionStatus('failed');
-        alert('Connection failed. Please check the password and try again.');
-        setTimeout(() => setConnectionStatus('idle'), 2000);
-      }
-    }, 3000);
-  };
-
-  const openTeamViewer = () => {
-    // Try different TeamViewer URL protocols
-    const protocols = [
-      `teamviewer10://control?device=${partnerTeamViewerId}&password=${partnerPassword}`,
-      `teamviewer://control?device=${partnerTeamViewerId}&password=${partnerPassword}`,
-      `tv://control?device=${partnerTeamViewerId}&password=${partnerPassword}`
-    ];
-
-    let protocolWorked = false;
-
-    // Try each protocol
-    protocols.forEach((protocol, index) => {
-      setTimeout(() => {
-        try {
-          const link = document.createElement('a');
-          link.href = protocol;
-          link.click();
-          if (index === 0) protocolWorked = true;
-        } catch (error) {
-          console.log(`Protocol ${index + 1} failed:`, error);
-        }
-      }, index * 500);
-    });
-
-    // Fallback instructions
-    setTimeout(() => {
-      if (!protocolWorked) {
-        const instructions = `TeamViewer Connection Details:\n\n` +
-          `Partner ID: ${partnerTeamViewerId}\n` +
-          `Password: ${partnerPassword}\n\n` +
-          `If TeamViewer didn&apos;t open automatically:\n` +
-          `1. Open TeamViewer manually\n` +
-          `2. Enter Partner ID: ${partnerTeamViewerId}\n` +
-          `3. Enter Password: ${partnerPassword}\n` +
-          `4. Click "Connect to partner"`;
-        
-        alert(instructions);
-      }
-      setConnectionStatus('idle');
+      setIsConnecting(false);
+      alert('Chrome Remote Desktop opened in a new tab. Sign in with your Google account to access your devices.');
     }, 2000);
   };
 
-  const disconnect = () => {
-    setConnectionStatus('idle');
-    setPartnerTeamViewerId('');
-    setPartnerPassword('');
-    setPartnerStatus('unknown');
-  };
+  const connectToAnyDesk = () => {
+    if (!deviceId.trim()) {
+      alert('Please enter an AnyDesk ID');
+      return;
+    }
 
-  const handlePartnerIdChange = (e) => {
-    const value = e.target.value.replace(/\D/g, ''); // Only numbers
-    setPartnerTeamViewerId(value);
+    setIsConnecting(true);
+
+    // Try to open AnyDesk with the device ID
+    const anydeskUrl = `anydesk:${deviceId}`;
     
-    if (value.length >= 9) {
-      checkPartnerStatus(value);
-    } else {
-      setPartnerStatus('unknown');
+    try {
+      window.location.href = anydeskUrl;
+      
+      setTimeout(() => {
+        setIsConnecting(false);
+        const fallback = confirm(
+          `AnyDesk should open automatically.\n\n` +
+          `If it didn't open:\n` +
+          `1. Download AnyDesk from anydesk.com\n` +
+          `2. Install and run AnyDesk\n` +
+          `3. Enter ID: ${deviceId}\n` +
+          `4. Click Connect\n\n` +
+          `Download AnyDesk now?`
+        );
+        
+        if (fallback) {
+          window.open('https://anydesk.com/en/downloads', '_blank');
+        }
+      }, 2000);
+    } catch (error) {
+      setIsConnecting(false);
+      const download = confirm(
+        `AnyDesk is not installed.\n\n` +
+        `Download and install AnyDesk to connect to ID: ${deviceId}?`
+      );
+      
+      if (download) {
+        window.open('https://anydesk.com/en/downloads', '_blank');
+      }
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'online': return 'text-green-600';
-      case 'offline': return 'text-red-600';
-      case 'checking': return 'text-yellow-600';
-      default: return 'text-gray-500';
+  const connectToTeamViewer = () => {
+    if (!deviceId.trim()) {
+      alert('Please enter a TeamViewer ID');
+      return;
+    }
+
+    setIsConnecting(true);
+
+    // Try TeamViewer web client first
+    const teamviewerWebUrl = `https://web.teamviewer.com/connect/${deviceId}`;
+    
+    // Also try desktop client
+    const teamviewerUrl = `teamviewer10://control?device=${deviceId}`;
+    
+    try {
+      // Try desktop client first
+      window.location.href = teamviewerUrl;
+      
+      setTimeout(() => {
+        // Fallback to web client
+        window.open(teamviewerWebUrl, '_blank');
+        setIsConnecting(false);
+        
+        alert(
+          `TeamViewer connection initiated!\n\n` +
+          `Desktop app should open, or check the new tab for web client.\n` +
+          `Enter the password when prompted.`
+        );
+      }, 2000);
+    } catch (error) {
+      // Open web client as fallback
+      window.open(teamviewerWebUrl, '_blank');
+      setIsConnecting(false);
     }
   };
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'online': return '🟢';
-      case 'offline': return '🔴';
-      case 'checking': return '🟡';
-      default: return '⚪';
+  const connectToWindowsRDP = () => {
+    if (!deviceId.trim()) {
+      alert('Please enter computer name or IP address');
+      return;
+    }
+
+    setIsConnecting(true);
+
+    const rdpUrl = `ms-rd:screenresolution=1920x1080&username=&domain=&workspaceid=&host=${deviceId}`;
+    
+    try {
+      window.location.href = rdpUrl;
+      
+      setTimeout(() => {
+        setIsConnecting(false);
+        alert(
+          `Windows Remote Desktop should open.\n\n` +
+          `If it doesn't work:\n` +
+          `1. Open "Remote Desktop Connection" from Start menu\n` +
+          `2. Enter computer: ${deviceId}\n` +
+          `3. Click Connect and enter credentials`
+        );
+      }, 2000);
+    } catch (error) {
+      setIsConnecting(false);
+      alert(
+        `Please use Windows Remote Desktop Connection manually:\n\n` +
+        `1. Search "Remote Desktop Connection" in Start menu\n` +
+        `2. Enter computer: ${deviceId}\n` +
+        `3. Click Connect`
+      );
     }
   };
 
-  const getConnectionButtonText = () => {
-    switch (connectionStatus) {
-      case 'connecting': return 'Connecting...';
-      case 'connected': return 'Connected - Opening TeamViewer...';
-      case 'failed': return 'Connection Failed';
-      default: return 'Connect to Partner';
+  const connectToVNC = () => {
+    if (!deviceId.trim()) {
+      alert('Please enter VNC server address (IP:port)');
+      return;
+    }
+
+    setIsConnecting(true);
+
+    const vncUrl = `vnc://${deviceId}`;
+    
+    try {
+      window.location.href = vncUrl;
+      
+      setTimeout(() => {
+        setIsConnecting(false);
+        const download = confirm(
+          `VNC Viewer should open.\n\n` +
+          `If not installed, download VNC Viewer?`
+        );
+        
+        if (download) {
+          window.open('https://www.realvnc.com/en/connect/download/viewer/', '_blank');
+        }
+      }, 2000);
+    } catch (error) {
+      setIsConnecting(false);
+      const download = confirm(
+        `VNC Viewer not found.\n\n` +
+        `Download VNC Viewer to connect to: ${deviceId}?`
+      );
+      
+      if (download) {
+        window.open('https://www.realvnc.com/en/connect/download/viewer/', '_blank');
+      }
     }
   };
 
-  const getConnectionButtonColor = () => {
-    switch (connectionStatus) {
-      case 'connecting': return 'bg-yellow-600 hover:bg-yellow-700';
-      case 'connected': return 'bg-green-600 hover:bg-green-700';
-      case 'failed': return 'bg-red-600 hover:bg-red-700';
-      default: return 'bg-blue-600 hover:bg-blue-700';
+  const handleConnect = () => {
+    switch (selectedService) {
+      case 'chrome-remote':
+        connectToChromeRemote();
+        break;
+      case 'anydesk':
+        connectToAnyDesk();
+        break;
+      case 'teamviewer':
+        connectToTeamViewer();
+        break;
+      case 'windows-rdp':
+        connectToWindowsRDP();
+        break;
+      case 'vnc-viewer':
+        connectToVNC();
+        break;
+      default:
+        alert('Please select a remote desktop service');
     }
+  };
+
+  const quickConnect = (serviceId, id) => {
+    setSelectedService(serviceId);
+    setDeviceId(id);
+    setTimeout(() => handleConnect(), 100);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-100 p-4">
+      <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">TeamViewer Connector</h1>
-          <p className="text-gray-600">Connect to remote computers using TeamViewer ID and Password</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+            Remote Control Center
+          </h1>
+          <p className="text-gray-600">
+            Connect to any computer using popular remote desktop solutions
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* My Credentials */}
-          <div className="bg-white rounded-xl shadow-xl p-6">
-            <h2 className="text-2xl font-semibold mb-4 text-gray-800">Your TeamViewer Credentials</h2>
-            
-            {/* TeamViewer Installation Status */}
-            <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">TeamViewer Status:</span>
-                <span className={`font-semibold ${teamViewerInstalled ? 'text-green-600' : 'text-red-600'}`}>
-                  {teamViewerInstalled ? '✅ Installed' : '❌ Not Installed'}
-                </span>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Service Selection */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-xl shadow-xl p-6">
+              <h2 className="text-xl font-semibold mb-4 text-gray-800">
+                Choose Remote Service
+              </h2>
+              
+              <div className="space-y-3">
+                {remoteServices.map((service) => (
+                  <div
+                    key={service.id}
+                    onClick={() => setSelectedService(service.id)}
+                    className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                      selectedService === service.id
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-blue-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{service.icon}</span>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-800">{service.name}</h3>
+                        <p className="text-sm text-gray-600">{service.description}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {service.platforms.map((platform) => (
+                        <span
+                          key={platform}
+                          className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded"
+                        >
+                          {platform}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
-
-            {/* My TeamViewer ID */}
-            <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Your TeamViewer ID
-              </label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={myTeamViewerId}
-                  readOnly
-                  className="flex-1 px-4 py-3 text-lg font-mono bg-blue-50 border-2 border-blue-200 rounded-lg text-center"
-                />
-                <button
-                  onClick={() => navigator.clipboard.writeText(myTeamViewerId)}
-                  className="px-3 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  📋
-                </button>
-              </div>
-            </div>
-
-            {/* My Password */}
-            <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Your Password
-              </label>
-              <div className="flex items-center gap-2">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={myPassword}
-                  readOnly
-                  className="flex-1 px-4 py-3 text-lg font-mono bg-green-50 border-2 border-green-200 rounded-lg text-center"
-                />
-                <button
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="px-3 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-                >
-                  {showPassword ? '🙈' : '👁️'}
-                </button>
-                <button
-                  onClick={() => navigator.clipboard.writeText(myPassword)}
-                  className="px-3 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                >
-                  📋
-                </button>
-              </div>
-            </div>
-
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <h3 className="font-semibold text-blue-900 mb-2">Share these credentials:</h3>
-              <p className="text-sm text-blue-800 mb-2">
-                <strong>ID:</strong> {myTeamViewerId}
-              </p>
-              <p className="text-sm text-blue-800">
-                <strong>Password:</strong> {showPassword ? myPassword : '••••••'}
-              </p>
             </div>
           </div>
 
-          {/* Connect to Partner */}
-          <div className="bg-white rounded-xl shadow-xl p-6">
-            <h2 className="text-2xl font-semibold mb-4 text-gray-800">Connect to Partner</h2>
+          {/* Connection Panel */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-xl shadow-xl p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <span className="text-3xl">{currentService?.icon}</span>
+                <div>
+                  <h2 className="text-2xl font-semibold text-gray-800">
+                    {currentService?.name}
+                  </h2>
+                  <p className="text-gray-600">{currentService?.description}</p>
+                </div>
+              </div>
 
-            {/* Partner TeamViewer ID */}
-            <div className="mb-4">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Partner&apos;s TeamViewer ID
-              </label>
-              <input
-                type="text"
-                value={partnerTeamViewerId}
-                onChange={handlePartnerIdChange}
-                placeholder="Enter 9-digit TeamViewer ID"
-                className="w-full px-4 py-3 text-lg font-mono border-2 border-gray-300 rounded-lg text-center focus:border-blue-500 focus:outline-none"
-                maxLength="10"
-              />
-              
-              {/* Partner Status */}
-              {partnerTeamViewerId.length >= 9 && (
-                <div className="flex items-center justify-center gap-2 mt-2 p-2 bg-gray-50 rounded-lg">
-                  <span className="text-lg">{getStatusIcon(partnerStatus)}</span>
-                  <span className="text-sm font-medium text-gray-700">Status:</span>
-                  <span className={`text-sm font-semibold ${getStatusColor(partnerStatus)}`}>
-                    {partnerStatus === 'checking' ? 'Checking...' : 
-                     partnerStatus === 'online' ? 'Online' :
-                     partnerStatus === 'offline' ? 'Offline' : 'Unknown'}
-                  </span>
+              {/* Connection Form */}
+              {selectedService !== 'chrome-remote' && (
+                <div className="mb-6">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    {selectedService === 'teamviewer' ? 'TeamViewer ID' :
+                     selectedService === 'anydesk' ? 'AnyDesk ID' :
+                     selectedService === 'windows-rdp' ? 'Computer Name/IP' :
+                     selectedService === 'vnc-viewer' ? 'VNC Server (IP:Port)' : 'Device ID'}
+                  </label>
+                  <input
+                    type="text"
+                    value={deviceId}
+                    onChange={(e) => setDeviceId(e.target.value)}
+                    placeholder={
+                      selectedService === 'teamviewer' ? 'Enter 9-digit TeamViewer ID' :
+                      selectedService === 'anydesk' ? 'Enter AnyDesk ID' :
+                      selectedService === 'windows-rdp' ? 'computer-name or 192.168.1.100' :
+                      selectedService === 'vnc-viewer' ? '192.168.1.100:5900' : 'Enter device identifier'
+                    }
+                    className="w-full px-4 py-3 text-lg border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                  />
                 </div>
               )}
-            </div>
 
-            {/* Partner Password */}
-            <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Partner&apos;s Password
-              </label>
-              <input
-                type="password"
-                value={partnerPassword}
-                onChange={(e) => setPartnerPassword(e.target.value)}
-                placeholder="Enter partner's password"
-                className="w-full px-4 py-3 text-lg border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
-                disabled={partnerStatus !== 'online'}
-              />
-            </div>
+              {/* Connect Button */}
+              <button
+                onClick={handleConnect}
+                disabled={isConnecting || (selectedService !== 'chrome-remote' && !deviceId.trim())}
+                className={`w-full px-6 py-4 text-lg font-semibold rounded-lg transition-colors ${
+                  isConnecting
+                    ? 'bg-yellow-600 text-white cursor-not-allowed'
+                    : 'bg-blue-600 hover:bg-blue-700 text-white'
+                } disabled:bg-gray-400 disabled:cursor-not-allowed`}
+              >
+                {isConnecting ? '🔄 Connecting...' : `🚀 Connect with ${currentService?.name}`}
+              </button>
 
-            {/* Connection Button */}
-            <button
-              onClick={connectToPartner}
-              disabled={
-                !teamViewerInstalled || 
-                partnerStatus !== 'online' || 
-                connectionStatus === 'connecting' ||
-                !partnerPassword.trim() ||
-                partnerTeamViewerId.length < 9
-              }
-              className={`w-full px-6 py-4 text-lg font-semibold text-white rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed ${getConnectionButtonColor()}`}
-            >
-              {getConnectionButtonText()}
-            </button>
-
-            {connectionStatus === 'connecting' && (
-              <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-yellow-800 text-sm text-center">
-                  🔄 Authenticating with TeamViewer servers...
-                </p>
+              {/* Service Info */}
+              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                <h3 className="font-semibold text-gray-800 mb-2">Requirements:</h3>
+                <ul className="text-sm text-gray-600 space-y-1">
+                  {currentService?.requiresInstall && (
+                    <li>• {currentService.name} must be installed on both devices</li>
+                  )}
+                  {currentService?.webClient && (
+                    <li>• Web client available (will open in browser)</li>
+                  )}
+                  <li>• Target computer must be online and accessible</li>
+                  <li>• Proper permissions/credentials required</li>
+                </ul>
               </div>
-            )}
 
-            {connectionStatus === 'connected' && (
-              <div className="mt-4 space-y-3">
-                <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                  <p className="text-green-800 text-sm text-center">
-                    ✅ Connection established! Opening TeamViewer...
-                  </p>
+              {/* Quick Examples */}
+              <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h3 className="font-semibold text-blue-900 mb-2">Quick Test Examples:</h3>
+                <div className="flex flex-wrap gap-2">
+                  {selectedService === 'teamviewer' && (
+                    <>
+                      <button
+                        onClick={() => quickConnect('teamviewer', '123456789')}
+                        className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                      >
+                        Test: 123456789
+                      </button>
+                    </>
+                  )}
+                  {selectedService === 'anydesk' && (
+                    <>
+                      <button
+                        onClick={() => quickConnect('anydesk', '123456789')}
+                        className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                      >
+                        Test: 123456789
+                      </button>
+                    </>
+                  )}
+                  {selectedService === 'windows-rdp' && (
+                    <>
+                      <button
+                        onClick={() => quickConnect('windows-rdp', 'localhost')}
+                        className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                      >
+                        Test: localhost
+                      </button>
+                    </>
+                  )}
                 </div>
-                <button
-                  onClick={disconnect}
-                  className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  Disconnect
-                </button>
               </div>
-            )}
-
-            {/* Requirements */}
-            <div className="mt-6 p-4 bg-orange-50 border border-orange-200 rounded-lg">
-              <h3 className="font-semibold text-orange-900 mb-2">Connection Requirements:</h3>
-              <ul className="text-sm text-orange-800 space-y-1">
-                <li>✓ Partner must be online</li>
-                <li>✓ Valid 9-digit TeamViewer ID</li>
-                <li>✓ Correct password from partner</li>
-                <li>✓ TeamViewer installed on your device</li>
-              </ul>
             </div>
           </div>
         </div>
 
-        {/* Instructions */}
+        {/* Features */}
         <div className="mt-8 bg-white rounded-xl shadow-xl p-6">
-          <h2 className="text-2xl font-semibold mb-4 text-gray-800">How to Connect</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h3 className="font-semibold text-gray-700 mb-2">To allow others to connect to you:</h3>
-              <ol className="text-sm text-gray-600 space-y-1 list-decimal list-inside">
-                <li>Share your TeamViewer ID and Password</li>
-                <li>Ensure TeamViewer is running on your computer</li>
-                <li>Wait for incoming connection requests</li>
-                <li>Accept the connection when prompted</li>
-              </ol>
+          <h2 className="text-2xl font-semibold mb-6 text-gray-800">Supported Features</h2>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="text-center p-4 bg-green-50 rounded-lg">
+              <div className="text-3xl mb-2">🖱️</div>
+              <h3 className="font-semibold mb-1">Full Control</h3>
+              <p className="text-sm text-gray-600">Mouse & keyboard control</p>
             </div>
-            <div>
-              <h3 className="font-semibold text-gray-700 mb-2">To connect to someone else:</h3>
-              <ol className="text-sm text-gray-600 space-y-1 list-decimal list-inside">
-                <li>Get their TeamViewer ID and Password</li>
-                <li>Enter the ID in the &ldquo;Partner&apos;s ID&rdquo; field</li>
-                <li>Enter their password in the password field</li>
-                <li>Click &ldquo;Connect to Partner&rdquo;</li>
-                <li>TeamViewer will open automatically</li>
-              </ol>
+            <div className="text-center p-4 bg-blue-50 rounded-lg">
+              <div className="text-3xl mb-2">📂</div>
+              <h3 className="font-semibold mb-1">File Transfer</h3>
+              <p className="text-sm text-gray-600">Copy files between devices</p>
+            </div>
+            <div className="text-center p-4 bg-purple-50 rounded-lg">
+              <div className="text-3xl mb-2">🔊</div>
+              <h3 className="font-semibold mb-1">Audio Support</h3>
+              <p className="text-sm text-gray-600">Hear remote audio</p>
+            </div>
+            <div className="text-center p-4 bg-yellow-50 rounded-lg">
+              <div className="text-3xl mb-2">📱</div>
+              <h3 className="font-semibold mb-1">Multi-Platform</h3>
+              <p className="text-sm text-gray-600">Works across devices</p>
             </div>
           </div>
         </div>
 
-        {/* Demo Notice */}
-        <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-red-800 text-sm text-center">
-            <strong>Note:</strong> This interface simulates TeamViewer functionality. 
-            Real connections require actual TeamViewer IDs and passwords from running TeamViewer instances.
-          </p>
+        {/* Download Links */}
+        <div className="mt-6 p-4 bg-gray-100 rounded-lg">
+          <h3 className="font-semibold text-gray-800 mb-3">Download Links:</h3>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+            {remoteServices.map((service) => (
+              <a
+                key={service.id}
+                href={service.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-2 bg-white text-sm text-center rounded hover:bg-gray-50 transition-colors"
+              >
+                {service.icon} {service.name}
+              </a>
+            ))}
+          </div>
         </div>
       </div>
     </div>
