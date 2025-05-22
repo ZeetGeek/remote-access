@@ -184,7 +184,7 @@ export default function TeamViewerConnector() {
           {/* Partner TeamViewer ID */}
           <div className="mb-8">
             <label className="block text-lg font-semibold text-gray-800 mb-3">
-              Partner's TeamViewer ID
+              Partner&apos;s TeamViewer ID
             </label>
             <div className="space-y-3">
               <input
@@ -241,7 +241,7 @@ export default function TeamViewerConnector() {
             <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
               <li>Enter the 9-digit TeamViewer ID of the computer you want to connect to</li>
               <li>The system will check if that computer is online</li>
-              <li>If online, click "Send Connection Request" to request access</li>
+              <li>If online, click &ldquo;Send Connection Request&rdquo; to request access</li>
               <li>Wait for the partner to accept your request</li>
               <li>TeamViewer will open automatically when the connection is established</li>
             </ol>
